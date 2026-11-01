@@ -1,0 +1,11 @@
+{
+  "name": "ai-secure-code-reviewer",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "server": "uvicorn api.index:app --reload --port 8000",
+    "start": "npm --prefix frontend run preview"
+  }
+}

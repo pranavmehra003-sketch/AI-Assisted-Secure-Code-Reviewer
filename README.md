@@ -34,8 +34,9 @@ An industry-grade, automated Application Security Testing (SAST) and AI-assisted
 
 ```mermaid
 flowchart TD
-    User([Developer / Security Auditor]) -->|Uploads File / Pastes Code| UI[Streamlit Cyber Dashboard]
-    UI --> Validator[Input Validator & Prompt Sanitizer]
+    User([Developer / Security Auditor]) -->|Uploads File / Pastes Code| UI[Vite React Cyber Dashboard / Vercel CDN]
+    UI --> API[FastAPI Serverless Backend / api/index.py]
+    API --> Validator[Input Validator & Prompt Sanitizer]
     Validator -->|Clean Code & Redacted Secrets| Engine[Static Security Orchestrator]
     
     subgraph Analysis Engines
@@ -142,12 +143,48 @@ Edit `.env` to configure your preferred AI provider:
 - **Ollama**: Set `AI_PROVIDER=ollama` and `OLLAMA_MODEL=deepseek-coder:6.7b`
 - **Offline Mode**: Leave keys blank; the system will automatically utilize its high-fidelity offline engine!
 
-### 4. Run the Application
-Launch the Streamlit cyber dashboard:
+### 4. Run the Full-Stack Application Locally
+
+Start the unified server (FastAPI Serverless backend + Built React Dashboard):
 ```bash
-streamlit run app.py
+python -m uvicorn api.index:app --reload --port 8000
 ```
-Open your browser at `http://localhost:8501`.
+Open your browser at **`http://localhost:8000`**.
+
+For active frontend development with hot-reloading:
+```bash
+# Terminal 1: Backend API
+python -m uvicorn api.index:app --reload --port 8000
+
+# Terminal 2: Vite React Frontend
+cd frontend
+npm run dev
+```
+
+---
+
+## ⚡ 1-Click Vercel Deployment
+
+This project is configured with `vercel.json` for serverless deployment:
+- **Frontend**: Vite + React compiled to static Edge CDN assets.
+- **Backend API**: Python Serverless Functions via `@vercel/python` in `api/index.py`.
+
+### Deploying via GitHub:
+1. Push this repository to GitHub.
+2. Go to [Vercel](https://vercel.com/) and click **"Add New Project"**.
+3. Import your repository. Vercel automatically detects `vercel.json`.
+4. In **Environment Variables**, optionally set:
+   - `GEMINI_API_KEY` (if using Google Gemini)
+   - `OPENAI_API_KEY` (if using OpenAI)
+   - `AI_PROVIDER` (`gemini`, `openai`, or `offline`)
+5. Click **Deploy**! Your application will be live globally on your `*.vercel.app` domain.
+
+### Deploying via Vercel CLI:
+```bash
+npm install -g vercel
+vercel
+```
+
 
 ---
 
