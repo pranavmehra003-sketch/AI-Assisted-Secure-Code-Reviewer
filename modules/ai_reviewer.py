@@ -216,3 +216,59 @@ Ensure the response is strictly valid JSON without markdown wrapping.
             "prevention": recom,
             "secure_code": secure_code
         }
+
+    def chat_response(self, query: str, finding_context: Optional[Dict[str, Any]] = None, code: str = "") -> str:
+        """Provides conversational AppSec answers for developer queries regarding vulnerabilities."""
+        safe_query, _ = sanitize_prompt_injection(query)
+
+        if self.provider == "gemini" and GEMINI_API_KEY:
+            try:
+                import google.generativeai as genai
+                genai.configure(api_key=GEMINI_API_KEY)
+                model = genai.GenerativeModel(GEMINI_MODEL)
+                prompt = f"You are a Principal Cybersecurity Architect. Answer the developer's question directly:\nQuestion: {safe_query}\nVulnerability Context: {json.dumps(finding_context or {})}\nCode: {code[:1500]}"
+                resp = model.generate_content(prompt)
+                if resp and resp.text:
+                    return resp.text.strip()
+            except Exception:
+                pass
+
+        elif self.provider == "openai" and OPENAI_API_KEY:
+            try:
+                from openai import OpenAI
+                client = OpenAI(api_key=OPENAI_API_KEY)
+                prompt = f"You are a Principal Cybersecurity Architect. Answer the developer's question directly:\nQuestion: {safe_query}\nVulnerability Context: {json.dumps(finding_context or {})}\nCode: {code[:1500]}"
+                resp = client.chat.completions.create(
+                    model=OPENAI_MODEL,
+                    messages=[{"role": "system", "content": "You are an elite AppSec Architect."}, {"role": "user", "content": prompt}]
+                )
+                return resp.choices[0].message.content
+            except Exception:
+                pass
+
+        elif self.provider == "grok" and GROK_API_KEY:
+            try:
+                from openai import OpenAI
+                client = OpenAI(api_key=GROK_API_KEY, base_url=GROK_BASE_URL)
+                prompt = f"You are a Principal Cybersecurity Architect. Answer the developer's question directly:\nQuestion: {safe_query}\nVulnerability Context: {json.dumps(finding_context or {})}\nCode: {code[:1500]}"
+                resp = client.chat.completions.create(
+                    model=GROK_MODEL,
+                    messages=[{"role": "system", "content": "You are an elite AppSec Architect."}, {"role": "user", "content": prompt}]
+                )
+                return resp.choices[0].message.content
+            except Exception:
+                pass
+
+        q_lower = safe_query.lower()
+        title = finding_context.get("title", "this finding") if finding_context else "this pattern"
+        cwe = finding_context.get("cwe_id", "CWE-Security") if finding_context else ""
+
+        if "false positive" in q_lower or "not a bug" in q_lower:
+            return f"To evaluate if {title} ({cwe}) is a false positive: verify whether user input is strictly validated by an allowlist schema earlier in the pipeline. If sanitized by design, you can document and mark it as a verified false positive in your compliance audit log."
+        elif "exploit" in q_lower or "attacker" in q_lower or "how" in q_lower:
+            return f"An attacker exploits {title} by supplying boundary-breaking input (e.g. quote delimiters for SQL injection, traversal sequences '../' for path traversal, or shell separators). This coerces the interpreter to execute arbitrary attacker logic under server privileges."
+        elif "fix" in q_lower or "prevent" in q_lower or "orm" in q_lower:
+            return f"Best practice remediation for {title}: Replace dynamic concatenation with parameterized interfaces (Prepared Statements, safe subprocess argument arrays, or ORM parameter binding). Never concatenate unvalidated input into execution contexts."
+        else:
+            return f"Regarding '{safe_query}' on {title} ({cwe}): The key architectural rule is strict separation of code from data. Implement defense-in-depth with input schema validation, least-privilege permissions, and automated regression scanning."
+

@@ -61,6 +61,28 @@ class DiffRequest(BaseModel):
     fixed_code: str
     filename: Optional[str] = "snippet.py"
 
+class ChatRequest(BaseModel):
+    message: str
+    finding: Optional[Dict[str, Any]] = None
+    code: Optional[str] = ""
+    ai_provider: Optional[str] = "offline"
+    api_key: Optional[str] = None
+
+@app.post("/api/chat")
+def security_chat_assistant(payload: ChatRequest):
+    if payload.api_key:
+        if payload.ai_provider == "gemini":
+            os.environ["GEMINI_API_KEY"] = payload.api_key
+        elif payload.ai_provider == "openai":
+            os.environ["OPENAI_API_KEY"] = payload.api_key
+        elif payload.ai_provider == "grok":
+            os.environ["GROK_API_KEY"] = payload.api_key
+
+    engine = AIReviewEngine(provider=payload.ai_provider or "offline")
+    answer = engine.chat_response(payload.message, payload.finding, payload.code or "")
+    return {"reply": answer}
+
+
 @app.get("/api/health")
 def health_check():
     stats = get_security_stats()
