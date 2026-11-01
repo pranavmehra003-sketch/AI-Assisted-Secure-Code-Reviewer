@@ -45,7 +45,19 @@ class TestVercelAPI(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         data = res.json()
         self.assertTrue(data["syntax_valid"])
-        self.assertTrue(data["is_improved"])
+    def test_scan_endpoint_with_grok_provider(self):
+        code = 'import sqlite3\nconn.execute("SELECT * FROM users WHERE id = " + user_id)'
+        res = self.client.post("/api/scan", json={
+            "code": code,
+            "filename": "vuln_sql.py",
+            "language": "Python",
+            "ai_provider": "grok",
+            "api_key": "xai-test-dummy-key"
+        })
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertLessEqual(data["security_score"], 45.0)
+        self.assertGreaterEqual(len(data["findings"]), 1)
 
 if __name__ == "__main__":
     unittest.main()

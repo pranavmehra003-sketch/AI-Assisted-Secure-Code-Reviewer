@@ -5,6 +5,7 @@ from typing import Dict, Any, List, Optional
 from config import (
     AI_PROVIDER, GEMINI_API_KEY, GEMINI_MODEL,
     OPENAI_API_KEY, OPENAI_MODEL,
+    GROK_API_KEY, GROK_MODEL, GROK_BASE_URL,
     OLLAMA_BASE_URL, OLLAMA_MODEL
 )
 from modules.input_validator import sanitize_prompt_injection, mask_secrets_for_ai
@@ -42,6 +43,11 @@ class AIReviewEngine:
 
         elif self.provider == "openai" and OPENAI_API_KEY:
             res = self._call_openai(safe_code, vulnerability, language)
+            if res:
+                return res
+
+        elif self.provider == "grok" and GROK_API_KEY:
+            res = self._call_grok(safe_code, vulnerability, language)
             if res:
                 return res
 
@@ -137,6 +143,25 @@ Ensure the response is strictly valid JSON without markdown wrapping.
             return self._parse_json_response(raw)
         except Exception:
             return None
+
+    def _call_grok(self, code: str, vuln: Dict[str, Any], language: str) -> Optional[Dict[str, str]]:
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=GROK_API_KEY, base_url=GROK_BASE_URL)
+            prompt = self._build_prompt(code, vuln, language)
+            response = client.chat.completions.create(
+                model=GROK_MODEL,
+                messages=[
+                    {"role": "system", "content": "You are a professional Application Security Engineer."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.2
+            )
+            raw = response.choices[0].message.content
+            return self._parse_json_response(raw)
+        except Exception:
+            return None
+
 
     def _call_ollama(self, code: str, vuln: Dict[str, Any], language: str) -> Optional[Dict[str, str]]:
         try:

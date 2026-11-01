@@ -246,19 +246,22 @@ export default function App() {
               onChange={(e) => setAiProvider(e.target.value)}
             >
               <option value="offline">Built-in Offline Engine (No Key Needed)</option>
+              <option value="grok">xAI Grok (Cloud)</option>
               <option value="gemini">Google Gemini (Cloud)</option>
               <option value="openai">OpenAI GPT-4o (Cloud)</option>
               <option value="ollama">Local Ollama (DeepSeek / Llama)</option>
             </select>
           </div>
 
-          {(aiProvider === 'gemini' || aiProvider === 'openai') && (
+          {(aiProvider === 'gemini' || aiProvider === 'openai' || aiProvider === 'grok') && (
             <div className="control-group">
-              <label className="control-label">{aiProvider === 'gemini' ? 'Gemini API Key' : 'OpenAI API Key'}</label>
+              <label className="control-label">
+                {aiProvider === 'gemini' ? 'Gemini API Key' : (aiProvider === 'grok' ? 'xAI Grok API Key' : 'OpenAI API Key')}
+              </label>
               <input 
                 type="password"
                 className="custom-input"
-                placeholder="Paste API Key (Optional if in .env)"
+                placeholder={aiProvider === 'grok' ? 'xai-xxxxxxxx...' : 'Paste API Key (Optional if in .env)'}
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
               />

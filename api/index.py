@@ -126,6 +126,8 @@ def scan_source_code(payload: ScanRequest):
             os.environ["GEMINI_API_KEY"] = payload.api_key
         elif payload.ai_provider == "openai":
             os.environ["OPENAI_API_KEY"] = payload.api_key
+        elif payload.ai_provider == "grok":
+            os.environ["GROK_API_KEY"] = payload.api_key
 
     ai_engine = AIReviewEngine(provider=payload.ai_provider or "offline")
 
