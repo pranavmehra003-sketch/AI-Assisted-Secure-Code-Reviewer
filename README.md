@@ -12,6 +12,7 @@ An industry-grade, automated Application Security Testing (SAST) and AI-assisted
   - **OWASP Multi-Language Rules**: Extensible pattern engine covering SQL Injection, OS Command Injection, XSS, Path Traversal, SSRF, Broken Cryptography, and Insecure Deserialization in Python, JavaScript/TypeScript, Java, C/C++, PHP, Go, and SQL.
   - **Semgrep CLI Integration**: Seamless hooks for enterprise Semgrep rulesets.
 - **Provider-Agnostic AI Engine**:
+  - **xAI Grok API** (`grok-2` / `grok-beta`)
   - **Google Gemini API** (`gemini-1.5-flash` / `gemini-1.5-pro`)
   - **OpenAI API** (`gpt-4o`, `gpt-4o-mini`)
   - **Local LLM via Ollama** (100% offline & private scanning with `deepseek-coder`, `codellama`, or `llama3`)

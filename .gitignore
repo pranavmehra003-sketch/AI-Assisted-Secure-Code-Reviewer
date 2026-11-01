@@ -47,3 +47,8 @@ reports/*.json
 
 # Streamlit
 .streamlit/
+
+# Office & OS lock files
+~$*
+.DS_Store
+Thumbs.db
