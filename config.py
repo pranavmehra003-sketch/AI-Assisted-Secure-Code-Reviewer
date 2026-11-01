@@ -6,17 +6,26 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent
-DATABASE_DIR = BASE_DIR / "database"
-REPORTS_DIR = BASE_DIR / "reports"
+
+# Check if running in Vercel serverless environment (read-only root filesystem)
+IS_VERCEL = os.getenv("VERCEL") == "1" or os.getenv("VERCEL_ENV") is not None
+
+if IS_VERCEL:
+    DATABASE_DIR = Path("/tmp/database")
+    REPORTS_DIR = Path("/tmp/reports")
+    DB_PATH = Path("/tmp/reviews.db")
+else:
+    DATABASE_DIR = BASE_DIR / "database"
+    REPORTS_DIR = BASE_DIR / "reports"
+    DB_PATH = BASE_DIR / os.getenv("DATABASE_PATH", "database/reviews.db")
+
 SAMPLE_CODE_DIR = BASE_DIR / "sample_code"
 
 # Ensure runtime directories exist
 DATABASE_DIR.mkdir(parents=True, exist_ok=True)
 REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-SAMPLE_CODE_DIR.mkdir(parents=True, exist_ok=True)
-
-# Database
-DB_PATH = BASE_DIR / os.getenv("DATABASE_PATH", "database/reviews.db")
+if not IS_VERCEL:
+    SAMPLE_CODE_DIR.mkdir(parents=True, exist_ok=True)
 
 # AI Settings
 AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini").lower()

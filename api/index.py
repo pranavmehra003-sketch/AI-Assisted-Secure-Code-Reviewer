@@ -169,21 +169,26 @@ def scan_source_code(payload: ScanRequest):
     # 6. Executive Summary
     summary = ai_engine.generate_executive_summary(filename, language, enriched_findings, score)
 
-    # 7. Persist to SQLite
-    review_id = save_review(
-        filename=filename,
-        file_language=language,
-        code_snippet=code,
-        security_score=score,
-        total_issues=len(enriched_findings),
-        critical_count=counts["CRITICAL"],
-        high_count=counts["HIGH"],
-        medium_count=counts["MEDIUM"],
-        low_count=counts["LOW"],
-        ai_provider=payload.ai_provider or "offline",
-        executive_summary=summary
-    )
-    save_vulnerabilities(review_id, enriched_findings)
+    # 7. Persist to SQLite (with safe fallback for serverless cold-starts)
+    review_id = None
+    try:
+        review_id = save_review(
+            filename=filename,
+            file_language=language,
+            code_snippet=code,
+            security_score=score,
+            total_issues=len(enriched_findings),
+            critical_count=counts["CRITICAL"],
+            high_count=counts["HIGH"],
+            medium_count=counts["MEDIUM"],
+            low_count=counts["LOW"],
+            ai_provider=payload.ai_provider or "offline",
+            executive_summary=summary
+        )
+        if review_id:
+            save_vulnerabilities(review_id, enriched_findings)
+    except Exception as db_err:
+        print(f"Warning: Failed to save review to database: {db_err}")
 
     return {
         "review_id": review_id,
