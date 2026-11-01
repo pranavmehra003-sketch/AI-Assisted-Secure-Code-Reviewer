@@ -344,25 +344,99 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.85rem 1.25rem;
+  padding: 0 0 0 1rem;
   background: #0d1527;
   border-bottom: 1px solid var(--border-subtle);
+  min-height: 40px;
 }
 
-.window-dots {
+.win-title-left {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.window-dot {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
+.win-active-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #060911;
+  padding: 0.35rem 0.85rem;
+  border-top: 2px solid #38bdf8;
+  border-left: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+  border-bottom: 1px solid #060911;
+  border-radius: 5px 5px 0 0;
+  margin-top: 4px;
 }
 
-.window-dot.red { background: #ff5f56; }
-.window-dot.yellow { background: #ffbd2e; }
-.window-dot.green { background: #27c93f; }
+.win-tab-input {
+  background: transparent;
+  border: none;
+  color: #f1f5f9;
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+  outline: none;
+  width: 175px;
+}
+
+.win-title-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.win-info-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.win-lang-select {
+  background: #060911;
+  border: 1px solid var(--border-subtle);
+  color: #ffffff;
+  padding: 0.25rem 0.6rem;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.win-char-count {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-family: var(--font-mono);
+}
+
+.windows-window-controls {
+  display: flex;
+  align-items: center;
+  height: 40px;
+}
+
+.win-ctrl-btn {
+  width: 44px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.win-ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.win-ctrl-btn.close:hover {
+  background: #e81123 !important;
+  color: #ffffff !important;
+}
 
 .editor-surface {
   width: 100%;

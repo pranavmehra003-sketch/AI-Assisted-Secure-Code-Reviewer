@@ -10,7 +10,8 @@ import {
   ChevronDown, ChevronUp, Check, Play, BookOpen, Clock, Lock,
   LayoutDashboard, GitPullRequest, GitBranch, Bug, MessageSquare,
   Search, Copy, Sparkles, Filter, AlertOctagon, Info, ArrowUpRight,
-  Send, Bot, User, CheckSquare, XCircle, Sliders, TrendingUp
+  Send, Bot, User, CheckSquare, XCircle, Sliders, TrendingUp,
+  Minus, Square, X
 } from 'lucide-react';
 import './App.css';
 
@@ -733,38 +734,51 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Code Window Frame */}
+              {/* Code Window Frame - Windows Style */}
               <div className="code-window-frame">
-                <div className="window-titlebar">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div className="window-dots">
-                      <div className="window-dot red" />
-                      <div className="window-dot yellow" />
-                      <div className="window-dot green" />
+                <div className="window-titlebar win-titlebar">
+                  <div className="win-title-left">
+                    <div className="win-active-tab">
+                      <Code2 size={13} style={{ color: '#38bdf8' }} />
+                      <input 
+                        type="text" 
+                        value={filename}
+                        onChange={(e) => setFilename(e.target.value)}
+                        className="win-tab-input"
+                        title="File name"
+                      />
                     </div>
-                    <input 
-                      type="text" 
-                      value={filename}
-                      onChange={(e) => setFilename(e.target.value)}
-                      style={{ background: '#060911', border: '1px solid var(--border-subtle)', color: '#ffffff', padding: '0.25rem 0.6rem', borderRadius: '5px', fontSize: '0.82rem', fontFamily: 'var(--font-mono)' }}
-                    />
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                    <select 
-                      value={language}
-                      onChange={(e) => setLanguage(e.target.value)}
-                      style={{ background: '#060911', border: '1px solid var(--border-subtle)', color: '#ffffff', padding: '0.3rem 0.65rem', borderRadius: '6px', fontSize: '0.8rem' }}
-                    >
-                      <option value="Python">Python</option>
-                      <option value="JavaScript">JavaScript</option>
-                      <option value="Java">Java</option>
-                      <option value="C/C++">C/C++</option>
-                      <option value="PHP">PHP</option>
-                      <option value="Go">Go</option>
-                      <option value="SQL">SQL</option>
-                    </select>
-                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{code.length} chars</span>
+                  <div className="win-title-right">
+                    <div className="win-info-group">
+                      <select 
+                        value={language}
+                        onChange={(e) => setLanguage(e.target.value)}
+                        className="win-lang-select"
+                      >
+                        <option value="Python">Python</option>
+                        <option value="JavaScript">JavaScript</option>
+                        <option value="Java">Java</option>
+                        <option value="C/C++">C/C++</option>
+                        <option value="PHP">PHP</option>
+                        <option value="Go">Go</option>
+                        <option value="SQL">SQL</option>
+                      </select>
+                      <span className="win-char-count">{code.length} chars</span>
+                    </div>
+
+                    <div className="windows-window-controls" aria-label="Windows controls">
+                      <button type="button" className="win-ctrl-btn" title="Minimize">
+                        <Minus size={13} strokeWidth={2} />
+                      </button>
+                      <button type="button" className="win-ctrl-btn" title="Maximize">
+                        <Square size={11} strokeWidth={1.8} />
+                      </button>
+                      <button type="button" className="win-ctrl-btn close" title="Close">
+                        <X size={14} strokeWidth={2} />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
