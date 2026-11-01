@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { 
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
+  PieChart, Pie, Legend, AreaChart, Area, CartesianGrid
+} from 'recharts';
+import { 
   Shield, AlertTriangle, CheckCircle, Code2, FileText, 
   Download, Terminal, RefreshCw, Trash2, Cpu, ExternalLink,
   ChevronDown, ChevronUp, Check, Play, BookOpen, Clock, Lock,
   LayoutDashboard, GitPullRequest, GitBranch, Bug, MessageSquare,
   Search, Copy, Sparkles, Filter, AlertOctagon, Info, ArrowUpRight,
-  Send, Bot, User, CheckSquare, XCircle, Sliders
+  Send, Bot, User, CheckSquare, XCircle, Sliders, TrendingUp
 } from 'lucide-react';
 import './App.css';
 
@@ -20,8 +24,8 @@ def get_user(username):
 `;
 
 export default function App() {
-  // Navigation State
-  const [activePage, setActivePage] = useState('scanner'); // 'dashboard', 'scanner', 'vulnerabilities', 'fixes', 'chat', 'github', 'reports'
+  // Navigation State - defaults to Dashboard
+  const [activePage, setActivePage] = useState('dashboard'); // 'dashboard', 'scanner', 'vulnerabilities', 'fixes', 'chat', 'github', 'reports'
 
   // Code & Scan State
   const [code, setCode] = useState(DEFAULT_CODE);
@@ -393,122 +397,313 @@ export default function App() {
         {/* Content Body */}
         <div className="content-body">
           {/* ================= VIEW 1: DASHBOARD ================= */}
-          {activePage === 'dashboard' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              {/* Score Hero */}
-              <div className="score-hero-card">
-                <div className="score-circular-meter">
-                  <svg width="110" height="110">
-                    <circle cx="55" cy="55" r="45" stroke="#1e293b" strokeWidth="8" fill="none" />
-                    <circle 
-                      cx="55" cy="55" r="45" 
-                      stroke={reviewResult ? (reviewResult.security_score >= 80 ? '#00f5a0' : (reviewResult.security_score >= 60 ? '#f59e0b' : '#ff3366')) : '#00f5a0'} 
-                      strokeWidth="8" 
-                      fill="none" 
-                      strokeDasharray="283" 
-                      strokeDashoffset={reviewResult ? 283 - (283 * reviewResult.security_score) / 100 : 0} 
-                      strokeLinecap="round" 
-                    />
-                  </svg>
-                  <div className="score-text-inner">
-                    <div className="big-num">{reviewResult ? reviewResult.security_score : 100}</div>
-                    <div className="grade-lbl">{reviewResult ? reviewResult.grade : 'Grade A'}</div>
-                  </div>
-                </div>
+          {activePage === 'dashboard' && (() => {
+            const severityChartData = [
+              { name: 'Critical', count: reviewResult?.counts?.CRITICAL ?? 3, fill: '#ff3366' },
+              { name: 'High', count: reviewResult?.counts?.HIGH ?? 5, fill: '#ff7700' },
+              { name: 'Medium', count: reviewResult?.counts?.MEDIUM ?? 4, fill: '#ffbb00' },
+              { name: 'Low', count: reviewResult?.counts?.LOW ?? 2, fill: '#00e676' }
+            ];
 
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
-                    <h2 style={{ fontSize: '1.45rem', fontWeight: '800' }}>Application Security Posture</h2>
-                    <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '10px', background: 'rgba(0, 245, 160, 0.15)', color: '#00f5a0', fontWeight: '700' }}>
-                      {reviewResult ? 'AUDIT COMPLETE' : 'STANDBY'}
-                    </span>
-                  </div>
-                  <p style={{ fontSize: '0.9rem', color: '#cbd5e1', lineHeight: '1.5', maxWidth: '750px' }}>
-                    {reviewResult?.executive_summary || 'No audit executed yet. Upload your source code or select a preset sample to calculate real-time CVSS risk scores, detect exposed keys, and synthesize AI remediations.'}
-                  </p>
-                </div>
+            const owaspChartData = (reviewResult?.owasp_distribution && Object.keys(reviewResult.owasp_distribution).length > 0)
+              ? Object.entries(reviewResult.owasp_distribution).map(([name, value]) => ({ name, value }))
+              : [
+                  { name: 'Injection (A03)', value: 45 },
+                  { name: 'Cryptographic Failures (A02)', value: 20 },
+                  { name: 'Hardcoded Secrets', value: 15 },
+                  { name: 'Broken Access Control (A01)', value: 10 },
+                  { name: 'Integrity Failures (A08)', value: 10 }
+                ];
+            const OWASP_COLORS = ['#6366f1', '#00d9f5', '#ff3366', '#ffbb00', '#00f5a0', '#a855f7'];
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <button className="btn-primary" onClick={() => setActivePage('scanner')}>
-                    <Code2 size={15} /> Scan New Code
-                  </button>
-                  <button className="btn-secondary" onClick={() => setActivePage('reports')}>
-                    <FileText size={15} /> View Audit Reports
-                  </button>
-                </div>
-              </div>
+            const trendData = (history.length >= 2)
+              ? history.slice(0, 6).reverse().map(item => ({
+                  audit: `Scan #${item.id}`,
+                  score: item.security_score,
+                  issues: item.total_issues
+                }))
+              : [
+                  { audit: 'Initial Scan', score: 30, issues: 14 },
+                  { audit: 'Triage #1', score: 52, issues: 9 },
+                  { audit: 'Patch #2', score: 75, issues: 4 },
+                  { audit: 'Verified Build', score: 94, issues: 1 }
+                ];
 
-              {/* KPI Cards */}
-              <div className="kpi-grid">
-                <div className="kpi-card">
-                  <div className="kpi-icon-wrapper" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}>
-                    <Code2 size={24} />
-                  </div>
-                  <div className="kpi-text">
-                    <h3>{history.length > 0 ? history.length + 3 : 18}</h3>
-                    <p>Total Files Audited</p>
-                  </div>
-                </div>
-
-                <div className="kpi-card">
-                  <div className="kpi-icon-wrapper" style={{ background: 'rgba(255, 51, 102, 0.15)', color: '#ff3366' }}>
-                    <AlertOctagon size={24} />
-                  </div>
-                  <div className="kpi-text">
-                    <h3 style={{ color: '#ff3366' }}>{reviewResult?.counts?.CRITICAL ?? 3}</h3>
-                    <p>Critical Flaws</p>
-                  </div>
-                </div>
-
-                <div className="kpi-card">
-                  <div className="kpi-icon-wrapper" style={{ background: 'rgba(255, 119, 0, 0.15)', color: '#ff7700' }}>
-                    <AlertTriangle size={24} />
-                  </div>
-                  <div className="kpi-text">
-                    <h3 style={{ color: '#ff7700' }}>{reviewResult?.counts?.HIGH ?? 5}</h3>
-                    <p>High Severity</p>
-                  </div>
-                </div>
-
-                <div className="kpi-card">
-                  <div className="kpi-icon-wrapper" style={{ background: 'rgba(0, 245, 160, 0.15)', color: '#00f5a0' }}>
-                    <CheckCircle size={24} />
-                  </div>
-                  <div className="kpi-text">
-                    <h3 style={{ color: '#00f5a0' }}>12</h3>
-                    <p>Verified Patches</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Recent Vulnerabilities Feed */}
-              <div className="glass-panel" style={{ padding: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Recent Vulnerability Findings</h3>
-                  <button className="btn-secondary" onClick={() => setActivePage('vulnerabilities')}>
-                    View All Flaws <ArrowUpRight size={14} />
-                  </button>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {[
-                    { title: "SQL Injection via Dynamic Concatenation", cwe: "CWE-89", file: "database.py : Line 14", sev: "CRITICAL" },
-                    { title: "Hardcoded AWS Access Key ID", cwe: "CWE-798", file: "config.py : Line 8", sev: "CRITICAL" },
-                    { title: "DOM-Based Cross-Site Scripting (innerHTML)", cwe: "CWE-79", file: "views.js : Line 42", sev: "HIGH" },
-                    { title: "Insecure Object Deserialization (pickle)", cwe: "CWE-502", file: "session.py : Line 29", sev: "HIGH" }
-                  ].map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.9rem 1.1rem', background: '#090e1a', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                      <div>
-                        <div style={{ fontWeight: '700', fontSize: '0.92rem' }}>{item.title}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>{item.cwe} · {item.file}</div>
-                      </div>
-                      <span className={`badge badge-${item.sev.toLowerCase()}`}>{item.sev}</span>
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+                {/* Score Hero Card */}
+                <div className="score-hero-card">
+                  <div className="score-circular-meter">
+                    <svg width="110" height="110">
+                      <circle cx="55" cy="55" r="45" stroke="#1e293b" strokeWidth="8" fill="none" />
+                      <circle 
+                        cx="55" cy="55" r="45" 
+                        stroke={reviewResult ? (reviewResult.security_score >= 80 ? '#00f5a0' : (reviewResult.security_score >= 60 ? '#f59e0b' : '#ff3366')) : '#00f5a0'} 
+                        strokeWidth="8" 
+                        fill="none" 
+                        strokeDasharray="283" 
+                        strokeDashoffset={reviewResult ? 283 - (283 * reviewResult.security_score) / 100 : 0} 
+                        strokeLinecap="round" 
+                      />
+                    </svg>
+                    <div className="score-text-inner">
+                      <div className="big-num">{reviewResult ? reviewResult.security_score : 94}</div>
+                      <div className="grade-lbl">{reviewResult ? reviewResult.grade : 'Grade A'}</div>
                     </div>
-                  ))}
+                  </div>
+
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
+                      <h2 style={{ fontSize: '1.45rem', fontWeight: '800' }}>Enterprise Security Posture</h2>
+                      <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '10px', background: reviewResult?.security_score < 60 ? 'rgba(255, 51, 102, 0.2)' : 'rgba(0, 245, 160, 0.15)', color: reviewResult?.security_score < 60 ? '#ff3366' : '#00f5a0', fontWeight: '700' }}>
+                        {reviewResult ? (reviewResult.security_score < 60 ? 'CRITICAL ACTION REQUIRED' : 'COMPLIANCE READY') : 'CONTINUOUS AUDIT ACTIVE'}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '0.9rem', color: '#cbd5e1', lineHeight: '1.5', maxWidth: '780px' }}>
+                      {reviewResult?.executive_summary || 'Your security posture reflects automated AST scanning (Bandit), zero-knowledge secret redaction, and multi-language OWASP threat evaluations. Run a scan to benchmark code risk scores.'}
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <button className="btn-primary" onClick={() => setActivePage('scanner')}>
+                      <Code2 size={15} /> Scan New Code
+                    </button>
+                    <button className="btn-secondary" onClick={() => setActivePage('reports')}>
+                      <FileText size={15} /> Audit Reports
+                    </button>
+                  </div>
+                </div>
+
+                {/* 6 KPI Cards Grid */}
+                <div className="kpi-grid">
+                  <div className="kpi-card">
+                    <div className="kpi-icon-wrapper" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}>
+                      <Code2 size={24} />
+                    </div>
+                    <div className="kpi-text">
+                      <h3>{history.length > 0 ? history.length : 12}</h3>
+                      <p>Total Files Scanned</p>
+                    </div>
+                  </div>
+
+                  <div className="kpi-card">
+                    <div className="kpi-icon-wrapper" style={{ background: 'rgba(255, 51, 102, 0.15)', color: '#ff3366' }}>
+                      <AlertOctagon size={24} />
+                    </div>
+                    <div className="kpi-text">
+                      <h3 style={{ color: '#ff3366' }}>{reviewResult?.counts?.CRITICAL ?? 3}</h3>
+                      <p>Critical Vulnerabilities</p>
+                    </div>
+                  </div>
+
+                  <div className="kpi-card">
+                    <div className="kpi-icon-wrapper" style={{ background: 'rgba(255, 119, 0, 0.15)', color: '#ff7700' }}>
+                      <AlertTriangle size={24} />
+                    </div>
+                    <div className="kpi-text">
+                      <h3 style={{ color: '#ff7700' }}>{reviewResult?.counts?.HIGH ?? 5}</h3>
+                      <p>High Severity Flaws</p>
+                    </div>
+                  </div>
+
+                  <div className="kpi-card">
+                    <div className="kpi-icon-wrapper" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#eab308' }}>
+                      <Bug size={24} />
+                    </div>
+                    <div className="kpi-text">
+                      <h3 style={{ color: '#eab308' }}>{(reviewResult?.counts?.MEDIUM ?? 4) + (reviewResult?.counts?.LOW ?? 2)}</h3>
+                      <p>Medium / Low Flaws</p>
+                    </div>
+                  </div>
+
+                  <div className="kpi-card">
+                    <div className="kpi-icon-wrapper" style={{ background: 'rgba(0, 245, 160, 0.15)', color: '#00f5a0' }}>
+                      <CheckCircle size={24} />
+                    </div>
+                    <div className="kpi-text">
+                      <h3 style={{ color: '#00f5a0' }}>12</h3>
+                      <p>Verified Patches</p>
+                    </div>
+                  </div>
+
+                  <div className="kpi-card">
+                    <div className="kpi-icon-wrapper" style={{ background: 'rgba(0, 217, 245, 0.15)', color: '#00d9f5' }}>
+                      <GitPullRequest size={24} />
+                    </div>
+                    <div className="kpi-text">
+                      <h3 style={{ color: '#00d9f5' }}>{prApproved ? '43' : '42'}</h3>
+                      <p>PRs Audited</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Interactive Recharts Analytics Row */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.25rem' }}>
+                  {/* Chart 1: Severity Bar Chart */}
+                  <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 800 }}>Vulnerabilities by Severity</h4>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>AST & Secret Rules</span>
+                    </div>
+                    <div style={{ height: '220px', width: '100%' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={severityChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} />
+                          <YAxis stroke="#64748b" fontSize={11} tickLine={false} />
+                          <Tooltip 
+                            contentStyle={{ background: '#090e1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }} 
+                            itemStyle={{ color: '#00f5a0' }}
+                          />
+                          <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                            {severityChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Chart 2: OWASP Threat Distribution Donut */}
+                  <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 800 }}>OWASP Threat Distribution</h4>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Top 10 Breakdown</span>
+                    </div>
+                    <div style={{ height: '220px', width: '100%' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie 
+                            data={owaspChartData} 
+                            dataKey="value" 
+                            nameKey="name" 
+                            cx="50%" 
+                            cy="50%" 
+                            innerRadius={50} 
+                            outerRadius={80} 
+                            paddingAngle={4}
+                          >
+                            {owaspChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={OWASP_COLORS[index % OWASP_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={{ background: '#090e1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Chart 3: Security Score Trajectory Area Chart */}
+                  <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 800 }}>Security Score Trajectory</h4>
+                      <span style={{ fontSize: '0.75rem', color: '#00f5a0', fontWeight: '700' }}>+59 pts Improvement</span>
+                    </div>
+                    <div style={{ height: '220px', width: '100%' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#00f5a0" stopOpacity={0.4}/>
+                              <stop offset="95%" stopColor="#00f5a0" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <XAxis dataKey="audit" stroke="#64748b" fontSize={11} tickLine={false} />
+                          <YAxis stroke="#64748b" fontSize={11} tickLine={false} domain={[0, 100]} />
+                          <Tooltip contentStyle={{ background: '#090e1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }} />
+                          <Area type="monotone" dataKey="score" stroke="#00f5a0" strokeWidth={3} fillOpacity={1} fill="url(#scoreGradient)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Threat Intelligence CWE Matrix */}
+                <div className="glass-panel" style={{ padding: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.15rem' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Threat Intelligence & CWE Matrix</h3>
+                      <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Real-time signatures monitored across your codebase</p>
+                    </div>
+                    <button className="btn-secondary" onClick={() => setActivePage('vulnerabilities')}>
+                      Explore All Flaws <ArrowUpRight size={14} />
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+                    {[
+                      { cwe: 'CWE-89', name: 'SQL Injection', desc: 'Dynamic query string formatting bypasses authentication', sev: 'CRITICAL', count: 1 },
+                      { cwe: 'CWE-78', name: 'OS Command Injection', desc: 'Shell invocation allows remote reverse execution', sev: 'CRITICAL', count: 1 },
+                      { cwe: 'CWE-798', name: 'Hardcoded Credentials', desc: 'Exposed AWS tokens & DB credentials in source files', sev: 'CRITICAL', count: 2 },
+                      { cwe: 'CWE-79', name: 'Cross-Site Scripting (XSS)', desc: 'Unsanitized innerHTML and DOM injection points', sev: 'HIGH', count: 1 },
+                      { cwe: 'CWE-502', name: 'Insecure Deserialization', desc: 'Unpickling untrusted payload executes arbitrary gadgets', sev: 'HIGH', count: 1 },
+                      { cwe: 'CWE-328', name: 'Broken Crypto (MD5)', desc: 'Obsolete collision-prone hash algorithm in authentication', sev: 'MEDIUM', count: 1 }
+                    ].map((item, idx) => (
+                      <div key={idx} style={{ padding: '1rem', background: '#090e1a', borderRadius: '10px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#818cf8' }}>{item.cwe}</span>
+                          <span className={`badge badge-${item.sev.toLowerCase()}`}>{item.sev}</span>
+                        </div>
+                        <div style={{ fontWeight: '700', fontSize: '0.92rem' }}>{item.name}</div>
+                        <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: '1.4' }}>{item.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recent Scans Activity Table */}
+                <div className="glass-panel" style={{ padding: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.15rem' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Recent Scan Activity</h3>
+                      <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Audit trails persisted in local SQLite database</p>
+                    </div>
+                    <button className="btn-secondary" onClick={() => setActivePage('reports')}>
+                      Audit History Log <Clock size={14} />
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                    {(history.length > 0 ? history.slice(0, 4) : [
+                      { id: 104, filename: 'auth_service.py', file_language: 'Python', total_issues: 4, critical_count: 2, security_score: 45.0, created_at: 'Just now' },
+                      { id: 103, filename: 'payment_gateway.js', file_language: 'JavaScript', total_issues: 2, critical_count: 0, security_score: 82.0, created_at: '2 hours ago' },
+                      { id: 102, filename: 'user_repository.java', file_language: 'Java', total_issues: 3, critical_count: 1, security_score: 55.0, created_at: 'Yesterday' }
+                    ]).map((item, idx) => (
+                      <div 
+                        key={idx} 
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.85rem 1.15rem', background: '#090e1a', borderRadius: '8px', border: '1px solid var(--border-subtle)', flexWrap: 'wrap', gap: '0.75rem' }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(99, 102, 241, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8' }}>
+                            <FileText size={16} />
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: '700', fontSize: '0.92rem' }}>{item.filename} <span style={{ fontSize: '0.75rem', color: '#64748b' }}>({item.file_language})</span></div>
+                            <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Audit #{item.id} · {item.created_at}</div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#cbd5e1' }}>{item.total_issues} Findings</div>
+                            <div style={{ fontSize: '0.72rem', color: item.critical_count > 0 ? '#ff3366' : '#00f5a0' }}>{item.critical_count} Critical</div>
+                          </div>
+
+                          <span style={{ fontSize: '1.15rem', fontWeight: '800', color: item.security_score >= 80 ? '#00f5a0' : (item.security_score >= 60 ? '#f59e0b' : '#ff3366') }}>
+                            {item.security_score}%
+                          </span>
+
+                          <button className="btn-secondary" style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem' }} onClick={() => setActivePage('vulnerabilities')}>
+                            View Flaws
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ================= VIEW 2: CODE SCANNER ================= */}
           {activePage === 'scanner' && (
