@@ -16,7 +16,7 @@ from config import (
 from modules.database import (
     init_db, save_review, save_vulnerabilities,
     get_reviews, get_review_by_id, get_vulnerabilities_by_review,
-    delete_review, get_security_stats, log_audit_event
+    delete_review, get_security_stats, log_audit_event, get_audit_logs
 )
 from modules.input_validator import (
     validate_uploaded_file, detect_language,
@@ -279,7 +279,13 @@ def get_user(username):
                     st.stop()
 
                 # 2. Run Static Analysis Orchestration
-                findings = run_all_scanners(source_code, filename, language)
+                findings = run_all_scanners(
+                    source_code, filename, language,
+                    enable_secrets=enable_secrets,
+                    enable_bandit=enable_bandit,
+                    enable_owasp_rules=enable_owasp_rules,
+                    enable_semgrep=enable_semgrep,
+                )
 
                 # 3. Calculate Security Score & Grade
                 score, grade, counts = calculate_security_score(findings)
@@ -576,3 +582,13 @@ with tab_audit:
     3. **Prompt Injection Hardening:** Code comments and strings are analyzed and sanitized against jailbreak and delimiter bypass attempts.
     4. **Offline Capability:** Completely functional in offline environments without external cloud API dependencies.
     """)
+
+    st.markdown("---")
+    st.markdown("#### 📋 Security Audit Trail")
+    audit_entries = get_audit_logs(limit=100)
+    if audit_entries:
+        df_audit = pd.DataFrame(audit_entries)[["id", "event_type", "details", "timestamp"]]
+        df_audit.columns = ["ID", "Event", "Details", "Timestamp"]
+        st.dataframe(df_audit, use_container_width=True)
+    else:
+        st.info("No audit events recorded yet. Run a code scan to populate the audit trail.")

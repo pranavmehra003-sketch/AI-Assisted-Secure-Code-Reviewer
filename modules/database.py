@@ -7,62 +7,67 @@ from config import DB_PATH
 def get_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    # Enable cascading deletes (SQLite requires this per-connection)
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 def init_db():
     """Initializes the database schema if tables do not exist."""
-    conn = get_connection()
-    cursor = conn.cursor()
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
 
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS reviews (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        filename TEXT NOT NULL,
-        file_language TEXT NOT NULL,
-        code_snippet TEXT,
-        security_score REAL NOT NULL,
-        total_issues INTEGER NOT NULL,
-        critical_count INTEGER DEFAULT 0,
-        high_count INTEGER DEFAULT 0,
-        medium_count INTEGER DEFAULT 0,
-        low_count INTEGER DEFAULT 0,
-        ai_provider TEXT DEFAULT 'none',
-        executive_summary TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT NOT NULL,
+            file_language TEXT NOT NULL,
+            code_snippet TEXT,
+            security_score REAL NOT NULL,
+            total_issues INTEGER NOT NULL,
+            critical_count INTEGER DEFAULT 0,
+            high_count INTEGER DEFAULT 0,
+            medium_count INTEGER DEFAULT 0,
+            low_count INTEGER DEFAULT 0,
+            ai_provider TEXT DEFAULT 'none',
+            executive_summary TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
 
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS vulnerabilities (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        review_id INTEGER NOT NULL,
-        title TEXT NOT NULL,
-        severity TEXT NOT NULL,
-        category TEXT,
-        cwe_id TEXT,
-        line_number INTEGER,
-        snippet TEXT,
-        description TEXT,
-        why_dangerous TEXT,
-        attack_scenario TEXT,
-        fix_recommendation TEXT,
-        secure_code TEXT,
-        scanner_source TEXT,
-        FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE
-    )
-    """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS vulnerabilities (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            review_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            severity TEXT NOT NULL,
+            category TEXT,
+            cwe_id TEXT,
+            line_number INTEGER,
+            snippet TEXT,
+            description TEXT,
+            why_dangerous TEXT,
+            attack_scenario TEXT,
+            fix_recommendation TEXT,
+            secure_code TEXT,
+            scanner_source TEXT,
+            FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE
+        )
+        """)
 
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS audit_logs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        event_type TEXT NOT NULL,
-        details TEXT,
-        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_type TEXT NOT NULL,
+            details TEXT,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
 
-    conn.commit()
-    conn.close()
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Warning: Database initialization skipped or failed: {e}")
 
 def save_review(
     filename: str,
@@ -218,3 +223,18 @@ def log_audit_event(event_type: str, details: str):
         conn.close()
     except Exception:
         pass
+
+
+def get_audit_logs(limit: int = 100) -> List[Dict[str, Any]]:
+    """Fetches recent audit log entries."""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT * FROM audit_logs ORDER BY id DESC LIMIT ?", (limit,)
+        )
+        rows = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return rows
+    except Exception:
+        return []

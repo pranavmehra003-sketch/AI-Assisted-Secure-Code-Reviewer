@@ -1,10 +1,38 @@
-# AI-Assisted Secure Code Reviewer - Serverless Dependencies
+# AI-Assisted Secure Code Reviewer — Python Dependencies
+# -------------------------------------------------------
+# Core web framework (FastAPI + ASGI server)
 fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+
+# Data validation
 pydantic>=2.7.0
+
+# Static analysis
 bandit>=1.7.9
+
+# PDF report generation
 fpdf2>=2.7.9
+
+# Environment variable loading
 python-dotenv>=1.0.1
+
+# HTTP client (used by Ollama integration)
 requests>=2.31.0
+
+# AI provider SDKs
 openai>=1.30.0
 google-generativeai>=0.7.0
 
+# Streamlit frontend (app.py)
+streamlit>=1.35.0
+
+# Charting for Streamlit app
+plotly>=5.22.0
+pandas>=2.2.0
+
+# Static file serving for local full-stack mode (optional; not needed on Vercel)
+aiofiles>=23.2.1
+
+# Testing
+pytest>=8.2.0
+httpx>=0.27.0

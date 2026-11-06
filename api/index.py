@@ -6,7 +6,6 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
-
 from fastapi import FastAPI, HTTPException, Body, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -172,6 +171,8 @@ def scan_source_code(payload: ScanRequest):
     # 7. Persist to SQLite (with safe fallback for serverless cold-starts)
     review_id = None
     try:
+        # In serverless environments, /tmp may be wiped between cold starts
+        init_db()
         review_id = save_review(
             filename=filename,
             file_language=language,
@@ -276,9 +277,18 @@ def export_json_report(payload: Dict[str, Any] = Body(...)):
         headers={"Content-Disposition": f'attachment; filename="Security_Report_{Path(filename).stem}.json"'}
     )
 
-# Mount frontend production build for unified local full-stack server
-dist_path = ROOT_DIR / "frontend" / "dist"
-if dist_path.exists():
-    from fastapi.staticfiles import StaticFiles
-    app.mount("/", StaticFiles(directory=str(dist_path), html=True), name="static")
+# Mount frontend production build for unified local full-stack server.
+# On Vercel, static files are served by the CDN edge layer (see vercel.json routes),
+# so we skip this mount entirely to avoid conflicts and the aiofiles dependency.
+IS_VERCEL = os.getenv("VERCEL") == "1" or os.getenv("VERCEL_ENV") is not None
+if not IS_VERCEL:
+    dist_path = ROOT_DIR / "frontend" / "dist"
+    if dist_path.exists():
+        try:
+            from fastapi.staticfiles import StaticFiles
+            app.mount("/", StaticFiles(directory=str(dist_path), html=True), name="static")
+        except ImportError:
+            # aiofiles not installed — static serving disabled; use `run.bat` which
+            # starts uvicorn and the Vite dev server separately.
+            pass
 

@@ -5,12 +5,16 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Always resolve the project root as the directory containing this file.
+# config.py lives at project root, so this is always correct regardless of
+# which module imports it first (api/index.py, app.py, tests, etc.).
 BASE_DIR = Path(__file__).resolve().parent
 
 # Check if running in Vercel serverless environment (read-only root filesystem)
 IS_VERCEL = os.getenv("VERCEL") == "1" or os.getenv("VERCEL_ENV") is not None
 
 if IS_VERCEL:
+    # Vercel: only /tmp is writable at runtime; everything else is read-only.
     DATABASE_DIR = Path("/tmp/database")
     REPORTS_DIR = Path("/tmp/reports")
     DB_PATH = Path("/tmp/reviews.db")
@@ -19,13 +23,24 @@ else:
     REPORTS_DIR = BASE_DIR / "reports"
     DB_PATH = BASE_DIR / os.getenv("DATABASE_PATH", "database/reviews.db")
 
+# sample_code/ is a read-only bundle — it lives at project root on both local
+# and Vercel (bundled via vercel.json includeFiles).
 SAMPLE_CODE_DIR = BASE_DIR / "sample_code"
 
-# Ensure runtime directories exist
-DATABASE_DIR.mkdir(parents=True, exist_ok=True)
-REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+# Ensure writable runtime directories exist (safe to call multiple times)
+try:
+    DATABASE_DIR.mkdir(parents=True, exist_ok=True)
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+except OSError:
+    # On some read-only environments the mkdir itself may fail; log and continue.
+    pass
+
 if not IS_VERCEL:
-    SAMPLE_CODE_DIR.mkdir(parents=True, exist_ok=True)
+    # Only try to create sample_code locally; on Vercel it is a bundled read-only dir.
+    try:
+        SAMPLE_CODE_DIR.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
 
 # AI Settings
 AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini").lower()

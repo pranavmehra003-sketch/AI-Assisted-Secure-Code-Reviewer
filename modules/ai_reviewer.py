@@ -117,8 +117,11 @@ Ensure the response is strictly valid JSON without markdown wrapping.
 
     def _call_gemini(self, code: str, vuln: Dict[str, Any], language: str) -> Optional[Dict[str, str]]:
         try:
+            import os
             import google.generativeai as genai
-            genai.configure(api_key=GEMINI_API_KEY)
+            # Re-read from env at call time so runtime key updates (e.g. from sidebar) take effect
+            api_key = os.environ.get("GEMINI_API_KEY", GEMINI_API_KEY)
+            genai.configure(api_key=api_key)
             model = genai.GenerativeModel(GEMINI_MODEL)
             prompt = self._build_prompt(code, vuln, language)
             response = model.generate_content(prompt)
@@ -128,8 +131,10 @@ Ensure the response is strictly valid JSON without markdown wrapping.
 
     def _call_openai(self, code: str, vuln: Dict[str, Any], language: str) -> Optional[Dict[str, str]]:
         try:
+            import os
             from openai import OpenAI
-            client = OpenAI(api_key=OPENAI_API_KEY)
+            api_key = os.environ.get("OPENAI_API_KEY", OPENAI_API_KEY)
+            client = OpenAI(api_key=api_key)
             prompt = self._build_prompt(code, vuln, language)
             response = client.chat.completions.create(
                 model=OPENAI_MODEL,
@@ -146,8 +151,10 @@ Ensure the response is strictly valid JSON without markdown wrapping.
 
     def _call_grok(self, code: str, vuln: Dict[str, Any], language: str) -> Optional[Dict[str, str]]:
         try:
+            import os
             from openai import OpenAI
-            client = OpenAI(api_key=GROK_API_KEY, base_url=GROK_BASE_URL)
+            api_key = os.environ.get("GROK_API_KEY", GROK_API_KEY)
+            client = OpenAI(api_key=api_key, base_url=GROK_BASE_URL)
             prompt = self._build_prompt(code, vuln, language)
             response = client.chat.completions.create(
                 model=GROK_MODEL,
@@ -221,10 +228,15 @@ Ensure the response is strictly valid JSON without markdown wrapping.
         """Provides conversational AppSec answers for developer queries regarding vulnerabilities."""
         safe_query, _ = sanitize_prompt_injection(query)
 
-        if self.provider == "gemini" and GEMINI_API_KEY:
+        import os
+        live_gemini_key = os.environ.get("GEMINI_API_KEY", GEMINI_API_KEY)
+        live_openai_key = os.environ.get("OPENAI_API_KEY", OPENAI_API_KEY)
+        live_grok_key = os.environ.get("GROK_API_KEY", GROK_API_KEY)
+
+        if self.provider == "gemini" and live_gemini_key:
             try:
                 import google.generativeai as genai
-                genai.configure(api_key=GEMINI_API_KEY)
+                genai.configure(api_key=live_gemini_key)
                 model = genai.GenerativeModel(GEMINI_MODEL)
                 prompt = f"You are a Principal Cybersecurity Architect. Answer the developer's question directly:\nQuestion: {safe_query}\nVulnerability Context: {json.dumps(finding_context or {})}\nCode: {code[:1500]}"
                 resp = model.generate_content(prompt)
@@ -233,10 +245,10 @@ Ensure the response is strictly valid JSON without markdown wrapping.
             except Exception:
                 pass
 
-        elif self.provider == "openai" and OPENAI_API_KEY:
+        elif self.provider == "openai" and live_openai_key:
             try:
                 from openai import OpenAI
-                client = OpenAI(api_key=OPENAI_API_KEY)
+                client = OpenAI(api_key=live_openai_key)
                 prompt = f"You are a Principal Cybersecurity Architect. Answer the developer's question directly:\nQuestion: {safe_query}\nVulnerability Context: {json.dumps(finding_context or {})}\nCode: {code[:1500]}"
                 resp = client.chat.completions.create(
                     model=OPENAI_MODEL,
@@ -246,10 +258,10 @@ Ensure the response is strictly valid JSON without markdown wrapping.
             except Exception:
                 pass
 
-        elif self.provider == "grok" and GROK_API_KEY:
+        elif self.provider == "grok" and live_grok_key:
             try:
                 from openai import OpenAI
-                client = OpenAI(api_key=GROK_API_KEY, base_url=GROK_BASE_URL)
+                client = OpenAI(api_key=live_grok_key, base_url=GROK_BASE_URL)
                 prompt = f"You are a Principal Cybersecurity Architect. Answer the developer's question directly:\nQuestion: {safe_query}\nVulnerability Context: {json.dumps(finding_context or {})}\nCode: {code[:1500]}"
                 resp = client.chat.completions.create(
                     model=GROK_MODEL,

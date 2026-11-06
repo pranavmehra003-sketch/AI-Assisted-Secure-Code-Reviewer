@@ -31,7 +31,7 @@ def run_semgrep_scan(code: str, filename: str = "temp.py") -> List[Dict[str, Any
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            timeout=25,
+            timeout=10,
             shell=False
         )
 

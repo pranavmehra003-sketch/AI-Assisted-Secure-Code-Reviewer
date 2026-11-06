@@ -4,7 +4,15 @@ from scanners.bandit_scanner import run_bandit_scan
 from scanners.custom_rules import scan_custom_rules
 from scanners.semgrep_scanner import run_semgrep_scan
 
-def run_all_scanners(code: str, filename: str, language: str) -> List[Dict[str, Any]]:
+def run_all_scanners(
+    code: str,
+    filename: str,
+    language: str,
+    enable_secrets: bool = True,
+    enable_bandit: bool = True,
+    enable_owasp_rules: bool = True,
+    enable_semgrep: bool = True,
+) -> List[Dict[str, Any]]:
     """
     Coordinates multi-engine static security analysis:
     1. Secret & Credential Detection
@@ -16,21 +24,24 @@ def run_all_scanners(code: str, filename: str, language: str) -> List[Dict[str, 
     findings: List[Dict[str, Any]] = []
 
     # 1. Secret Scanning (Language-agnostic)
-    secret_findings = scan_secrets(code, filename)
-    findings.extend(secret_findings)
+    if enable_secrets:
+        secret_findings = scan_secrets(code, filename)
+        findings.extend(secret_findings)
 
     # 2. Language-Specific AST Scanning
-    if language.lower() == "python":
+    if enable_bandit and language.lower() == "python":
         bandit_findings = run_bandit_scan(code, filename)
         findings.extend(bandit_findings)
 
     # 3. Multi-language Rules Engine
-    rule_findings = scan_custom_rules(code, language)
-    findings.extend(rule_findings)
+    if enable_owasp_rules:
+        rule_findings = scan_custom_rules(code, language)
+        findings.extend(rule_findings)
 
     # 4. Semgrep Integration
-    semgrep_findings = run_semgrep_scan(code, filename)
-    findings.extend(semgrep_findings)
+    if enable_semgrep:
+        semgrep_findings = run_semgrep_scan(code, filename)
+        findings.extend(semgrep_findings)
 
     # Deduplication based on (line_number, cwe_id or title keyword)
     deduped = []
