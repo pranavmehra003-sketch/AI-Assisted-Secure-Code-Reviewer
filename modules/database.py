@@ -6,7 +6,7 @@ from config import DB_PATH, DATABASE_DIR
 
 def get_connection():
     try:
-        DATABASE_DIR.mkdir(parents=True, exist_ok=True)
+        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     except OSError:
         pass
     conn = sqlite3.connect(DB_PATH)

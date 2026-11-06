@@ -17,7 +17,7 @@ if IS_VERCEL:
     # Vercel: only /tmp is writable at runtime; everything else is read-only.
     DATABASE_DIR = Path("/tmp/database")
     REPORTS_DIR = Path("/tmp/reports")
-    DB_PATH = Path("/tmp/reviews.db")
+    DB_PATH = Path("/tmp/database/reviews.db")
 else:
     DATABASE_DIR = BASE_DIR / "database"
     REPORTS_DIR = BASE_DIR / "reports"
