@@ -42,6 +42,10 @@ def generate_json_report(
     }
 
     report_path = REPORTS_DIR / f"report_{Path(filename).stem}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    try:
+        REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
     with open(report_path, "w", encoding="utf-8") as f:
         json.dump(report_data, f, indent=2)
 
@@ -224,6 +228,10 @@ def generate_pdf_report(
                 pdf.multi_cell(0, 4, sanitize_pdf_text(fix))
                 pdf.ln(4)
 
+    try:
+        REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
     out_file = REPORTS_DIR / f"Security_Report_{Path(filename).stem}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
     pdf.output(str(out_file))
     return str(out_file)

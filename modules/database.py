@@ -2,9 +2,13 @@ import sqlite3
 import json
 from datetime import datetime
 from typing import List, Dict, Any, Optional
-from config import DB_PATH
+from config import DB_PATH, DATABASE_DIR
 
 def get_connection():
+    try:
+        DATABASE_DIR.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     # Enable cascading deletes (SQLite requires this per-connection)
